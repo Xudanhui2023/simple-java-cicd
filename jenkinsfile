@@ -17,10 +17,13 @@ pipeline {
         stage('Compile') {
             steps {
                 script {
-                    def mavenHome = tool 'maven' // 这里的 'maven' 必须和你在 Jenkins 全局工具里配置的名字完全一致
-                    withEnv(["PATH+MAVEN=${mavenHome}/bin"]) {
-                        sh 'mvn clean compile'
-                    }
+                def mavenHome = tool 'maven'
+
+                 // 2. 拼接出 mvn 命令的绝对路径
+                 def mvnCmd = "${mavenHome}/bin/mvn"
+
+                 // 3. 使用绝对路径执行命令
+                 sh "${mvnCmd} clean package"
                 }
             }
         }
