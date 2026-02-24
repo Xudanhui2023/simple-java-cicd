@@ -16,16 +16,12 @@ pipeline {
 
         stage('Compile') {
             steps {
-                echo '编译项目...'
-                // 1. 声明使用之前配置好的 Maven 工具，并获取其主目录
                 script {
-                    // 假设你在 Global Tool Configuration 里配置的 Maven 名字叫 'maven' (或者你改成的正确名字)
-                    def mavenHome = tool 'maven'
-                    // 2. 将 Maven 的 bin 目录临时加入 PATH
-                    env.PATH = "${mavenHome}/bin:${env.PATH}"
+                    def mavenHome = tool 'maven' // 这里的 'maven' 必须和你在 Jenkins 全局工具里配置的名字完全一致
+                    withEnv(["PATH+MAVEN=${mavenHome}/bin"]) {
+                        sh 'mvn clean compile'
+                    }
                 }
-                // 3. 现在可以直接使用 mvn 命令了
-                sh 'mvn clean compile'
             }
         }
 
