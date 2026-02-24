@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         jdk 'jdk17'  // 这里填你在 Jenkins Global Tool 中配置的 JDK 名称
-        maven 'maven3'  // 这里填你在 Jenkins Global Tool 中配置的 Maven 名称
+        maven 'maven'  // 这里填你在 Jenkins Global Tool 中配置的 Maven 名称
     }
 
     stages {
