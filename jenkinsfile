@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk17'  // 这里填你在 Jenkins Global Tool 中配置的 JDK 名称
+        maven 'maven3'  // 这里填你在 Jenkins Global Tool 中配置的 Maven 名称
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo '拉取代码中...'
+                // Jenkins 会自动从 Git 拉取代码，无需手动写 checkout
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                echo '编译项目...'
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo '运行单元测试...'
+                sh 'mvn test'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo '打包成 Jar...'
+                sh 'mvn package -DskipTests'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ 构建成功！'
+        }
+        failure {
+            echo '❌ 构建失败！'
+        }
+    }
+}
