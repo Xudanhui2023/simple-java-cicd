@@ -1,54 +1,72 @@
 pipeline {
-    agent any
-
-    tools {
-        jdk 'jdk17'  // 这里填你在 Jenkins Global Tool 中配置的 JDK 名称
-        maven 'maven'  // 这里填你在 Jenkins Global Tool 中配置的 Maven 名称
-    }
+    agent any // 使用任何可用的 agent（即你的 Jenkins 容器）
 
     stages {
         stage('Checkout') {
             steps {
-                echo '拉取代码中...'
-                // Jenkins 会自动从 Git 拉取代码，无需手动写 checkout
+                checkout scm
             }
         }
 
-        stage('Compile') {
+        stage('Build') {
             steps {
                 script {
-                def mavenHome = tool 'maven'
+                    echo '🔨 开始编译打包...'
 
-                 // 2. 拼接出 mvn 命令的绝对路径
-                 def mvnCmd = "${mavenHome}/bin/mvn"
+                    // 1. 使用 Jenkins 全局配置的 Maven，自动适配路径
+                    // 假设你在 Global Tool Configuration 里给 Maven 起的别名是 "maven"
+                    def mavenHome = tool 'maven'
 
-                 // 3. 使用绝对路径执行命令
-                 sh "${mvnCmd} clean package"
+                    // 2. 在容器内执行 mvn 命令
+                    // 路径是 Linux 风格的，Jenkins 容器里必须有 sh
+                    sh "${mavenHome}/bin/mvn clean package"
                 }
             }
         }
 
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                echo '运行单元测试...'
-                sh 'mvn test'
+                script {
+                    echo '🐋 构建 Docker 镜像...'
+
+                    // 注意：此时是在 Jenkins 容器内，但通过挂载的 sock 操作 Windows Docker
+                    def imageName = "my-java-app"
+                    def imageTag = "latest"
+
+                    // 1. 停止并删除旧镜像（避免残留）
+                    sh """
+                        docker rmi ${imageName}:${imageTag} || true
+                    """
+
+                    // 2. 构建新镜像
+                    // 注意：Dockerfile 应该在你代码的根目录下
+                    sh """
+                        docker build -t ${imageName}:${imageTag} .
+                    """
+                }
             }
         }
 
-        stage('Package') {
+        stage('Deploy') {
             steps {
-                echo '打包成 Jar...'
-                sh 'mvn package -DskipTests'
-            }
-        }
-    }
+                script {
+                    echo '🚀 启动容器...'
 
-    post {
-        success {
-            echo '✅ 构建成功！'
-        }
-        failure {
-            echo '❌ 构建失败！'
+                    // 使用 Docker 运行应用
+                    // 假设你的应用端口是 8080
+                    sh '''
+                        # 停止旧容器
+                        docker stop my-app-container || true
+                        docker rm my-app-container || true
+
+                        # 启动新容器
+                        docker run -d \
+                          --name my-app-container \
+                          -p 8080:8080 \
+                          my-java-app:latest
+                    '''
+                }
+            }
         }
     }
 }
